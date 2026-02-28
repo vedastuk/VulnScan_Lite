@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VulnScan Lite - Web Vulnerability Scanner</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -816,9 +817,131 @@
         .success-message.show {
             display: block;
         }
-    </style>
-</head>
+        
+        /* Remediation Modal Styles */
+        .remediation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .remediation-overlay.active {
+            display: flex;
+        }
+        
+        .remediation-modal {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            padding: 40px;
+            animation: slideUp 0.3s ease-out;
+            position: relative;
+            overflow-y: auto;
+        }
+        
+        .remediation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .remediation-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        
+        .close-remediation {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #e0e0e0;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .close-remediation:hover {
+            background: #d0d0d0;
+        }
+        
+        .remediation-content {
+            color: #333;
+            line-height: 1.8;
+        }
+        
+        .remediation-section {
+            margin-bottom: 25px;
+        }
+        
+        .remediation-section h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .remediation-section p {
+            margin: 0 0 12px 0;
+            color: #555;
+        }
+        
+        .remediation-steps {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
+        .remediation-steps ol {
+            margin: 10px 0 0 20px;
+            padding: 0;
+        }
+        
+        .remediation-steps li {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .remediation-code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;\n            font-family: 'Courier New', monospace;\n            font-size: 0.9rem;\n            overflow-x: auto;\n            margin: 10px 0;\n        }\n        \n        .remediation-modal-buttons {\n            display: flex;\n            gap: 10px;\n            margin-top: 25px;\n            justify-content: flex-end;\n            padding-top: 20px;\n            border-top: 2px solid #e0e0e0;\n        }\n        \n        .remediation-modal-buttons button {\n            padding: 10px 24px;\n            border: none;\n            border-radius: 6px;\n            font-weight: 600;\n            cursor: pointer;\n            transition: all 0.2s;\n        }\n        \n        .btn-close-remediation {\n            background: #e0e0e0;\n            color: #333;\n        }\n        \n        .btn-close-remediation:hover {\n            background: #d0d0d0;\n        }\n    </style>\n</head>
 <body>
+    <!-- Remediation Modal -->
+    <div id="remediationOverlay" class="remediation-overlay">
+        <div class="remediation-modal">
+            <div class="remediation-header">
+                <h2 class="remediation-title" id="remediationTitle">Remediation Guide</h2>
+                <button class="close-remediation" onclick="closeRemediationModal()">×</button>
+            </div>
+            <div id="remediationContent" class="remediation-content"></div>
+            <div class="remediation-modal-buttons">
+                <button class="btn-close-remediation" onclick="closeRemediationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Authentication Overlay -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-modal">
@@ -1694,7 +1817,128 @@
         }
         
         function showRemediation(name, remediation) {
-            alert(`${name}\n\n${remediation}`);
+            // Enhanced remediation guide with better formatting
+            const remediationGuides = {
+                'Content-Security-Policy': {
+                    description: 'Content-Security-Policy (CSP) is a security standard that helps prevent cross-site scripting (XSS) attacks by allowing you to define which sources of content are trusted.',
+                    steps: [
+                        'Add the CSP header to your web server configuration',
+                        'Start with a basic policy and gradually expand as needed',
+                        'Test your policy thoroughly to avoid breaking site functionality',
+                        'Use report-uri to monitor CSP violations'
+                    ],
+                    code: "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+                },
+                'X-Frame-Options': {
+                    description: 'X-Frame-Options prevents your site from being embedded in an iframe on other sites, protecting against clickjacking attacks.',
+                    steps: [
+                        'Set X-Frame-Options header in your web server',
+                        'Use DENY to prevent all framing',
+                        'Use SAMEORIGIN to allow framing only on same domain',
+                        'Use ALLOW-FROM if you need specific exceptions'
+                    ],
+                    code: 'X-Frame-Options: SAMEORIGIN'
+                },
+                'Strict-Transport-Security': {
+                    description: 'HSTS (HTTP Strict-Transport-Security) forces browsers to use HTTPS connections, protecting against SSL/TLS stripping attacks.',
+                    steps: [
+                        'Ensure your site is fully functional over HTTPS',
+                        'Add HSTS header to your web server',
+                        'Start with a short max-age value for testing',
+                        'Gradually increase the max-age value once tested'
+                    ],
+                    code: 'Strict-Transport-Security: max-age=31536000; includeSubDomains'
+                },
+                'X-Content-Type-Options': {
+                    description: 'X-Content-Type-Options prevents MIME sniffing, where browsers guess the content type instead of respecting the Content-Type header.',
+                    steps: [
+                        'Add X-Content-Type-Options header to your server',
+                        'Set value to \"nosniff\" to prevent MIME sniffing',
+                        'Ensure all file types are served with correct Content-Type headers',
+                        'Test with browser developer tools'
+                    ],
+                    code: 'X-Content-Type-Options: nosniff'
+                },
+                'Strong Cipher Suites': {
+                    description: 'Using weak cipher suites makes your HTTPS connection vulnerable to decryption attacks. Update to modern, strong ciphers.',
+                    steps: [
+                        'Update your web server to the latest version',
+                        'Configure only modern TLS 1.2+ cipher suites',
+                        'Disable deprecated protocols (SSLv3, TLS 1.0, TLS 1.1)',
+                        'Test your configuration at SSL Labs'
+                    ],
+                    code: 'Use TLS 1.2 or higher with suites like: TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384'
+                },
+                'HttpOnly Flag': {
+                    description: 'Cookies without the HttpOnly flag can be accessed by JavaScript, making them vulnerable to XSS attacks.',
+                    steps: [
+                        'Update your application code to set HttpOnly flag',
+                        'This flag prevents JavaScript from accessing the cookie',
+                        'Test in browser developer tools (Application tab)',
+                        'Ensure all sensitive cookies have this flag'
+                    ],
+                    code: 'Set-Cookie: sessionId=abc123; HttpOnly; Secure; SameSite=Strict'
+                },
+                'Secure Flag': {
+                    description: 'Cookies without the Secure flag can be transmitted over unencrypted HTTP connections, exposing them to man-in-the-middle attacks.',
+                    steps: [
+                        'Update your application to set the Secure flag on cookies',
+                        'This ensures cookies are only sent over HTTPS',
+                        'Combine with HttpOnly flag for maximum security',
+                        'Test with browser network tools'
+                    ],
+                    code: 'Set-Cookie: sessionId=abc123; Secure; HttpOnly; SameSite=Strict'
+                },
+                'Server Information Disclosure': {
+                    description: 'Revealing your server software and version helps attackers identify potential vulnerabilities specific to that version.',
+                    steps: [
+                        'Configure your web server to hide the Server header',
+                        'For Apache: Set ServerTokens to Prod and ServerSignature Off',
+                        'For Nginx: Set server_tokens off in nginx.conf',
+                        'Verify with curl -I or online tools'
+                    ],
+                    code: '# Apache\nServerTokens Prod\nServerSignature Off\n\n# Nginx\nserver_tokens off;'
+                }
+            };
+            
+            const guide = remediationGuides[name] || {
+                description: remediation,
+                steps: ['Follow the remediation guide provided'],
+                code: null
+            };
+            
+            document.getElementById('remediationTitle').textContent = name;
+            let content = `
+                <div class="remediation-section">
+                    <h3>Overview</h3>
+                    <p>${guide.description}</p>
+                </div>
+                
+                <div class="remediation-section">
+                    <h3>How to Fix</h3>
+                    <div class="remediation-steps">
+                        <ol>
+                            ${guide.steps.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            `;
+            
+            if (guide.code) {
+                content += `
+                    <div class="remediation-section">
+                        <h3>Configuration Example</h3>
+                        <div class="remediation-code">${guide.code}</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('remediationContent').innerHTML = content;
+            document.getElementById('remediationOverlay').classList.add('active');
+        }
+        
+        function closeRemediationModal() {
+            document.getElementById('remediationOverlay').classList.remove('active');
         }
         
         function downloadReport() {
@@ -1702,34 +1946,100 @@
             const score = document.getElementById('scoreValue').textContent;
             const timestamp = new Date().toLocaleString();
             
-            let reportContent = `VulnScan Lite - Security Scan Report\n`;
-            reportContent += `=====================================\n\n`;
-            reportContent += `URL: ${url}\n`;
-            reportContent += `Scan Date: ${timestamp}\n`;
-            reportContent += `Security Score: ${score}/100\n\n`;
-            reportContent += `Disclaimer: This is a basic security health check and is not a substitute for professional penetration testing.\n\n`;
-            reportContent += `Vulnerabilities Found:\n`;
-            reportContent += `---------------------\n`;
+            // Create HTML content for PDF
+            let htmlContent = `
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+                        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; margin: -20px -20px 20px -20px; }
+                        .header h1 { margin: 0; font-size: 28px; }
+                        .header p { margin: 5px 0 0 0; opacity: 0.9; }
+                        .info-section { margin: 20px 0; padding: 15px; background: #f5f5f5; border-left: 4px solid #667eea; }
+                        .info-section strong { color: #667eea; }
+                        .score-section { text-align: center; margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+                        .score-circle { display: inline-block; width: 150px; height: 150px; border-radius: 50%; background: #667eea; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; margin: 0 auto; }
+                        .score-value { font-size: 48px; font-weight: bold; }
+                        .score-label { font-size: 18px; margin-top: 10px; }
+                        .category { margin: 30px 0; page-break-inside: avoid; }
+                        .category-title { font-size: 18px; font-weight: bold; color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 15px; }
+                        .check-item { margin: 15px 0; padding: 12px; background: #fff; border-left: 4px solid #ddd; }
+                        .check-item.passed { border-left-color: #4caf50; background: #f1f8f4; }
+                        .check-item.critical { border-left-color: #d32f2f; background: #ffebee; }
+                        .check-item.high { border-left-color: #f57c00; background: #fff3e0; }
+                        .check-item.medium { border-left-color: #1976d2; background: #e3f2fd; }
+                        .check-name { font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+                        .check-desc { font-size: 13px; color: #555; margin: 5px 0; }
+                        .check-status { font-size: 12px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
+                        .disclaimer { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; font-size: 13px; color: #856404; }
+                        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🔒 VulnScan Lite</h1>
+                        <p>Security Scan Report</p>
+                    </div>
+                    
+                    <div class="info-section">
+                        <strong>Scanned URL:</strong> ${url}<br>
+                        <strong>Scan Date:</strong> ${timestamp}<br>
+                    </div>
+                    
+                    <div class="score-section">
+                        <div class="score-circle">
+                            <div class="score-value">${score}</div>
+                            <div class="score-label">Security Score</div>
+                        </div>
+                    </div>
+            `;
             
+            // Add vulnerabilities by category
             vulnerabilityChecks.forEach(category => {
-                reportContent += `\n${category.category}:\n`;
+                htmlContent += `<div class="category"><div class="category-title">📋 ${category.category}</div>`;
                 category.checks.forEach(check => {
-                    reportContent += `  - ${check.name}: ${check.passed ? 'PASSED' : check.severity.toUpperCase()}\n`;
-                    reportContent += `    ${check.description}\n`;
-                    reportContent += `    Remediation: ${check.remediation}\n\n`;
+                    const statusClass = check.passed ? 'passed' : check.severity;
+                    const statusText = check.passed ? 'PASSED' : check.severity.toUpperCase();
+                    htmlContent += `
+                        <div class="check-item ${statusClass}">
+                            <div class="check-name">${check.name}</div>
+                            <div class="check-desc">${check.description}</div>
+                            <div class="check-status"><strong>Status:</strong> ${statusText}</div>
+                        </div>
+                    `;
                 });
+                htmlContent += `</div>`;
             });
             
-            // Create and download text file (simulating PDF)
-            const element = document.createElement('a');
-            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(reportContent));
-            element.setAttribute('download', `vulnscan_report_${Date.now()}.txt`);
-            element.style.display = 'none';
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
+            htmlContent += `
+                    <div class="disclaimer">
+                        <strong>⚠️ Important Disclaimer:</strong> VulnScan Lite is designed for basic security health checks only. This tool is NOT a substitute for professional penetration testing and comprehensive security audits. You should only scan websites that you own or have explicit permission to scan. For critical security assessments, please consult with professional security experts.
+                    </div>
+                    
+                    <div class="footer">
+                        <p>VulnScan Lite - On-Demand Web Vulnerability Scanner</p>
+                        <p>Report generated on ${timestamp}</p>
+                    </div>
+                </body>
+                </html>
+            `;
             
-            alert('Report downloaded successfully!');
+            // Generate PDF
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+            
+            const opt = {
+                margin: 10,
+                filename: `vulnscan_report_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            
+            html2pdf().set(opt).from(htmlContent).save();
+            
+            // Show success message
+            alert('PDF Report generated and downloaded successfully!');
         }
         
         function resetScan() {
